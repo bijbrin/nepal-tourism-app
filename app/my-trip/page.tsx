@@ -4,13 +4,7 @@ import { useState, useEffect } from 'react';
 import { Heart, MapPin, ArrowLeft, Trash2, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-
-// Demo data
-const places = [
-  { id: 1, name: "Everest Base Camp Trek", category: ["trekking"], location: "Solukhumbu", rating: 4.8, duration: "12-14 days" },
-  { id: 2, name: "Annapurna Base Camp Trek", category: ["trekking"], location: "Kaski", rating: 4.7, duration: "7-10 days" },
-  { id: 3, name: "Pokhara", category: ["nature", "adventure"], location: "Kaski", rating: 4.9, duration: "2-3 days" },
-];
+import { places } from '@/lib/places';
 
 export default function MyTrip() {
   const [favorites, setFavorites] = useState<number[]>([]);

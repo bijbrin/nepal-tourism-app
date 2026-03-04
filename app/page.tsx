@@ -4,17 +4,7 @@ import { useState, useEffect } from 'react';
 import { Heart, Check, MapPin, Search, Filter } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-
-// Simplified data for demo - full data would be imported
-const places = [
-  { id: 1, name: "Everest Base Camp Trek", category: ["trekking"], location: "Solukhumbu", rating: 4.8, description: "World's most famous trek to the base of Mount Everest" },
-  { id: 2, name: "Annapurna Base Camp Trek", category: ["trekking"], location: "Kaski", rating: 4.7, description: "Classic trek to the heart of Annapurna sanctuary" },
-  { id: 3, name: "Pokhara", category: ["nature", "adventure"], location: "Kaski", rating: 4.9, description: "Tourism capital with lakes and mountains" },
-  { id: 4, name: "Boudhanath Stupa", category: ["cultural"], location: "Kathmandu", rating: 4.6, description: "Largest stupa in Nepal, Tibetan Buddhism center" },
-  { id: 5, name: "Chitwan National Park", category: ["nature"], location: "Chitwan", rating: 4.5, description: "Famous for rhinos, tigers, and elephant safaris" },
-  { id: 6, name: "Pashupatinath Temple", category: ["cultural", "religious"], location: "Kathmandu", rating: 4.6, description: "Holiest Hindu temple dedicated to Lord Shiva" },
-  // Add more as needed
-];
+import { places } from '@/lib/places';
 
 export default function Home() {
   const [favorites, setFavorites] = useState<number[]>([]);
@@ -48,7 +38,7 @@ export default function Home() {
   const filteredPlaces = places.filter(place => {
     const matchesSearch = place.name.toLowerCase().includes(search.toLowerCase()) ||
                          place.description.toLowerCase().includes(search.toLowerCase());
-    const matchesFilter = filter === 'all' || place.category.includes(filter);
+    const matchesFilter = filter === 'all' || place.category.toLowerCase().includes(filter.toLowerCase());
     return matchesSearch && matchesFilter;
   });
 
@@ -122,11 +112,9 @@ export default function Home() {
               <div className="p-5">
                 {/* Category Badge */}
                 <div className="flex flex-wrap gap-2 mb-3">
-                  {place.category.map(cat => (
-                    <span key={cat} className="px-2 py-1 text-xs bg-white/10 rounded-full text-cyan-300">
-                      {cat}
-                    </span>
-                  ))}
+                  <span className="px-2 py-1 text-xs bg-white/10 rounded-full text-cyan-300">
+                    {place.category}
+                  </span>
                 </div>
 
                 <Link href={`/place/${place.id}`}>
