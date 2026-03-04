@@ -1,46 +1,141 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Heart, Check, MapPin, Search, Filter } from 'lucide-react';
+import { Heart, Check, MapPin, Search, Filter, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { places } from '@/lib/places';
+import { supabase } from '@/lib/supabase';
+import { places as localPlaces } from '@/lib/places';
 
 export default function Home() {
   const [favorites, setFavorites] = useState<number[]>([]);
   const [visited, setVisited] = useState<number[]>([]);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const fav = localStorage.getItem('nepal-favorites');
-    const vis = localStorage.getItem('nepal-visited');
-    if (fav) setFavorites(JSON.parse(fav));
-    if (vis) setVisited(JSON.parse(vis));
+    checkUser();
+    loadFavorites();
   }, []);
 
-  const toggleFavorite = (id: number) => {
+  const checkUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setUser(user);
+    setLoading(false);
+  };
+
+  const loadFavorites = async () => {
+    // Try localStorage first for offline
+    const localFav = localStorage.getItem('nepal-favorites');
+    const localVis = localStorage.getItem('nepal-visited');
+    if (localFav) setFavorites(JSON.parse(localFav));
+    if (localVis) setVisited(JSON.parse(localVis));
+
+    // If logged in, sync with Supabase
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: plans } = await supabase
+        .from('trip_plans')
+        .select('place_id, loved, visited')
+        .eq('user_id', user.id);
+      
+      if (plans) {
+        const favs = plans.filter(p => p.loved).map(p => p.place_id);
+        const vis = plans.filter(p => p.visited).map(p => p.place_id);
+        setFavorites(favs);
+        setVisited(vis);
+        localStorage.setItem('nepal-favorites', JSON.stringify(favs));
+        localStorage.setItem('nepal-visited', JSON.stringify(vis));
+      }
+    }
+  };
+
+  const toggleFavorite = async (id: number) => {
     const newFavs = favorites.includes(id) 
       ? favorites.filter(f => f !== id)
       : [...favorites, id];
     setFavorites(newFavs);
     localStorage.setItem('nepal-favorites', JSON.stringify(newFavs));
+
+    // Save to Supabase if logged in
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: existing } = await supabase
+        .from('trip_plans')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('place_id', id)
+        .single();
+
+      if (existing) {
+        await supabase
+          .from('trip_plans')
+          .update({ loved: !favorites.includes(id) })
+          .eq('id', existing.id);
+      } else {
+        await supabase
+          .from('trip_plans')
+          .insert({
+            user_id: user.id,
+            place_id: id,
+            loved: true,
+            visited: visited.includes(id)
+          });
+      }
+    }
   };
 
-  const toggleVisited = (id: number) => {
+  const toggleVisited = async (id: number) => {
     const newVis = visited.includes(id)
       ? visited.filter(v => v !== id)
       : [...visited, id];
     setVisited(newVis);
     localStorage.setItem('nepal-visited', JSON.stringify(newVis));
+
+    // Save to Supabase if logged in
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: existing } = await supabase
+        .from('trip_plans')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('place_id', id)
+        .single();
+
+      if (existing) {
+        await supabase
+          .from('trip_plans')
+          .update({ visited: !visited.includes(id) })
+          .eq('id', existing.id);
+      } else {
+        await supabase
+          .from('trip_plans')
+          .insert({
+            user_id: user.id,
+            place_id: id,
+            loved: favorites.includes(id),
+            visited: true
+          });
+      }
+    }
   };
 
-  const filteredPlaces = places.filter(place => {
+  const filteredPlaces = localPlaces.filter(place => {
     const matchesSearch = place.name.toLowerCase().includes(search.toLowerCase()) ||
                          place.description.toLowerCase().includes(search.toLowerCase());
     const matchesFilter = filter === 'all' || place.category.toLowerCase().includes(filter.toLowerCase());
     return matchesSearch && matchesFilter;
   });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-20">
@@ -55,13 +150,25 @@ export default function Home() {
               <p className="text-sm text-gray-400">Discover 100 Amazing Places</p>
             </div>
             
-            <Link 
-              href="/my-trip"
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full text-white font-medium hover:opacity-90 transition"
-            >
-              <Heart className="w-4 h-4" />
-              My Trip ({favorites.length})
-            </Link>
+            <div className="flex items-center gap-3">
+              {user ? (
+                <span className="text-sm text-gray-400">{user.email}</span>
+              ) : (
+                <Link 
+                  href="/auth"
+                  className="text-sm text-cyan-400 hover:underline"
+                >
+                  Sign In
+                </Link>
+              )}
+              <Link 
+                href="/my-trip"
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full text-white font-medium hover:opacity-90 transition"
+              >
+                <Heart className="w-4 h-4" />
+                My Trip ({favorites.length})
+              </Link>
+            </div>
           </div>
 
           {/* Search & Filter */}
@@ -101,12 +208,12 @@ export default function Home() {
               key={place.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
+              transition={{ delay: index * 0.02 }}
               className="group relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden hover:bg-white/10 transition-all duration-300"
             >
               {/* Image Placeholder */}
               <div className="h-48 bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center">
-                <span className="text-6xl">{getEmoji(place.category[0])}</span>
+                <span className="text-6xl">{getEmoji(place.category)}</span>
               </div>
 
               <div className="p-5">
@@ -179,11 +286,16 @@ export default function Home() {
 
 function getEmoji(category: string): string {
   const emojis: Record<string, string> = {
-    trekking: '🥾',
-    cultural: '🏛️',
-    nature: '🌿',
-    adventure: '🎿',
-    religious: '🙏',
+    'UNESCO World Heritage Site': '🏛️',
+    'Trekking Destination': '🥾',
+    'Lake': '💧',
+    'National Park': '🦁',
+    'Cultural Site': '🏮',
+    'Adventure Sports': '🪂',
+    'Hill Station': '🌄',
+    'Religious Site': '🙏',
+    'Cave': '🕳️',
+    'Off-the-Beaten-Path': '🗺️',
   };
   return emojis[category] || '🏔️';
 }
