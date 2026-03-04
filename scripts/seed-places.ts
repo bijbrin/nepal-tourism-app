@@ -2,10 +2,17 @@
 // Run: npx ts-node scripts/seed-places.ts
 
 import { createClient } from '@supabase/supabase-js';
-import { places } from '../lib/places';
+import { places } from '../lib/places.ts';
+import * as dotenv from 'dotenv';
+
+// Load env vars
+dotenv.config();
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+console.log('URL:', supabaseUrl ? 'Found' : 'Missing');
+console.log('Key:', supabaseKey ? 'Found' : 'Missing');
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
