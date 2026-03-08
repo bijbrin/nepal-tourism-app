@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { places as localPlaces } from '@/lib/places';
+import { User } from '@supabase/supabase-js';
 
 export default function Home() {
   const [favorites, setFavorites] = useState<number[]>([]);
@@ -13,7 +14,7 @@ export default function Home() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     checkUser();
@@ -42,8 +43,8 @@ export default function Home() {
         .eq('user_id', user.id);
       
       if (plans) {
-        const favs = plans.filter(p => p.loved).map(p => p.place_id);
-        const vis = plans.filter(p => p.visited).map(p => p.place_id);
+        const favs = plans.filter((p: { loved: boolean; place_id: number }) => p.loved).map((p: { place_id: number }) => p.place_id);
+        const vis = plans.filter((p: { visited: boolean; place_id: number }) => p.visited).map((p: { place_id: number }) => p.place_id);
         setFavorites(favs);
         setVisited(vis);
         localStorage.setItem('nepal-favorites', JSON.stringify(favs));

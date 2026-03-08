@@ -120,7 +120,7 @@ export default function TripPlanEditor({ plan, place, onUpdate, onClose }: TripP
           <div>
             <label className="text-sm text-gray-400 mb-2 block">Priority</label>
             <div className="flex gap-2">
-              {['must-see', 'maybe', 'backup'].map((p) => (
+              {(['must-see', 'maybe', 'backup'] as const).map((p) => (
                 <button
                   key={p}
                   onClick={() => setPriority(p)}

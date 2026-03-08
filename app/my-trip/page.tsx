@@ -5,13 +5,14 @@ import { Heart, MapPin, ArrowLeft, Loader2, Calendar, DollarSign, Edit2 } from '
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase, TripPlan } from '@/lib/supabase';
+import { User } from '@supabase/supabase-js';
 import { places as localPlaces } from '@/lib/places';
 import TripPlanEditor from '@/components/TripPlanEditor';
 
 export default function MyTrip() {
   const [plans, setPlans] = useState<TripPlan[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
   const [editingPlan, setEditingPlan] = useState<TripPlan | null>(null);
 
   useEffect(() => {
@@ -40,7 +41,7 @@ export default function MyTrip() {
       
       if (!error && tripPlans) {
         // Merge with place data
-        const mergedPlans = tripPlans.map(plan => ({
+        const mergedPlans = tripPlans.map((plan: TripPlan) => ({
           ...plan,
           place: localPlaces.find(p => p.id === plan.place_id)
         }));
@@ -49,7 +50,7 @@ export default function MyTrip() {
     } else {
       // Use localStorage for non-logged in users
       const favs = JSON.parse(localStorage.getItem('nepal-favorites') || '[]');
-      const localPlans = favs.map(id => ({
+      const localPlans = favs.map((id: number) => ({
         place_id: id,
         place: localPlaces.find(p => p.id === id),
         loved: true,
@@ -93,7 +94,7 @@ export default function MyTrip() {
     
     // Update localStorage
     const favs = JSON.parse(localStorage.getItem('nepal-favorites') || '[]');
-    const newFavs = favs.filter(id => id !== placeId);
+    const newFavs = favs.filter((id: number) => id !== placeId);
     localStorage.setItem('nepal-favorites', JSON.stringify(newFavs));
     
     setPlans(plans.filter(p => p.place_id !== placeId));

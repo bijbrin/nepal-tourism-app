@@ -1,9 +1,44 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// Create a dummy client for static builds when env vars are missing
+const createDummyClient = () => {
+  return {
+    auth: {
+      getUser: async () => ({ data: { user: null }, error: null }),
+      getSession: async () => ({ data: { session: null }, error: null }),
+    },
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          eq: () => ({
+            single: async () => ({ data: null, error: null }),
+          }),
+          single: async () => ({ data: null, error: null }),
+        }),
+        single: async () => ({ data: null, error: null }),
+      }),
+      insert: async () => ({ error: null }),
+      update: () => ({
+        eq: () => ({
+          eq: async () => ({ error: null }),
+        }),
+      }),
+      delete: () => ({
+        eq: () => ({
+          eq: async () => ({ error: null }),
+        }),
+      }),
+      upsert: async () => ({ error: null }),
+    }),
+  } as any;
+};
+
+export const supabase = (supabaseUrl && supabaseKey) 
+  ? createClient(supabaseUrl, supabaseKey)
+  : createDummyClient();
 
 // Types
 export interface Place {

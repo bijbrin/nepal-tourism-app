@@ -2,7 +2,7 @@
 // Run: npx ts-node scripts/seed-places.ts
 
 import { createClient } from '@supabase/supabase-js';
-import { places } from '../lib/places.ts';
+import { places } from '../lib/places';
 import * as dotenv from 'dotenv';
 
 // Load env vars
